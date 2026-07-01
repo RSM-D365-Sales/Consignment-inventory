@@ -5,13 +5,13 @@ import type { Metric, Season } from '../models/types'
 import { MetricToggle } from '../components/ui/MetricToggle'
 import { CustomerQueueCard } from '../components/CustomerQueueCard'
 import { LoadingState, ErrorState, EmptyState } from '../components/ui/States'
-import { money, moneyCompact, units } from '../lib/format'
+import { money, moneyCompact, units, todayIso } from '../lib/format'
 import { buildPositions } from '../lib/aggregations'
 import { SEASONS } from '../data/mockData'
 import { CATEGORY_COLORS, StackedBar } from '../components/charts/StackedBar'
 import type { CategoryAggregate, ProductCategory } from '../models/types'
 
-const AS_OF = '2026-06-30'
+const AS_OF = todayIso()
 
 export function DashboardPage() {
   const navigate = useNavigate()

@@ -17,9 +17,9 @@ import { buildLabels, seedFromString } from '../lib/shipping'
 import { EmailPreview } from '../components/EmailPreview'
 import { ShippingLabels } from '../components/ShippingLabels'
 import { LoadingState } from '../components/ui/States'
-import { money, units, dateLong } from '../lib/format'
+import { money, units, dateLong, todayIso } from '../lib/format'
 
-const AS_OF = '2026-06-30'
+const AS_OF = todayIso()
 type SeasonChoice = Season | 'all'
 type Stage = 'configure' | 'thinking' | 'draft' | 'submitting' | 'done'
 

@@ -49,10 +49,12 @@ export function AppShell({ children }: { children: ReactNode }) {
               </div>
             </div>
           </div>
-          <span className={`pill ${live ? 'pill--live' : 'pill--mock'}`}>
-            <span className="pill__dot" />
-            {live ? 'Live · D365' : 'Demo · Mock data'}
-          </span>
+          {live && (
+            <span className="pill pill--live">
+              <span className="pill__dot" />
+              Live · D365
+            </span>
+          )}
         </div>
       </aside>
 

@@ -9,12 +9,12 @@ import {
   TRANSFER_STATUS_LABEL,
   type TransferOrder,
 } from '../models/operations'
-import { money, units, dateLong } from '../lib/format'
+import { money, units, dateLong, todayIso } from '../lib/format'
 import { buildLabels, printLabels, seedFromString } from '../lib/shipping'
 import { PartnerLogo } from '../components/PartnerLogo'
 import { EmptyState } from '../components/ui/States'
 
-const AS_OF = '2026-06-30'
+const AS_OF = todayIso()
 
 export function TransfersPage() {
   const { transfers, sales, advanceStatus, receiveTransfer, clearAll } =
