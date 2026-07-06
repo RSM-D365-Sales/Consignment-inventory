@@ -14,6 +14,7 @@ import {
   endOfSeasonSubject,
 } from '../lib/emailDraft'
 import { buildLabels, seedFromString } from '../lib/shipping'
+import { lineValue } from '../lib/aggregations'
 import { EmailPreview } from '../components/EmailPreview'
 import { ShippingLabels } from '../components/ShippingLabels'
 import { LoadingState } from '../components/ui/States'
@@ -53,9 +54,34 @@ export function SeasonReturnPage() {
     () => (customerId ? linesForCustomer(customerId) : []),
     [linesForCustomer, customerId],
   )
-  const lines = useMemo(
+  const scopeLines = useMemo(
     () => (season === 'all' ? allLines : allLines.filter((l) => l.season === season)),
     [allLines, season],
+  )
+
+  // Draft edits — styles removed from or added to the drafted return, keyed by
+  // item number. Cleared whenever the user is back on the configure step so a
+  // fresh draft always starts from the season selection.
+  const [excluded, setExcluded] = useState<Set<string>>(new Set())
+  const [added, setAdded] = useState<Set<string>>(new Set())
+
+  useEffect(() => {
+    if (stage === 'configure') {
+      setExcluded(new Set())
+      setAdded(new Set())
+    }
+  }, [stage])
+
+  const draftItems = useMemo(() => {
+    const items = new Set(scopeLines.map((l) => l.itemNumber))
+    for (const item of excluded) items.delete(item)
+    for (const item of added) items.add(item)
+    return items
+  }, [scopeLines, excluded, added])
+
+  const lines = useMemo(
+    () => allLines.filter((l) => draftItems.has(l.itemNumber)),
+    [allLines, draftItems],
   )
 
   const totalUnits = lines.reduce((s, l) => s + l.unitsOnHand, 0)
@@ -68,8 +94,54 @@ export function SeasonReturnPage() {
     return set
   }, [allLines])
 
+  // Styles at this partner not currently in the draft — offered by the
+  // email's "add line" picker (other seasons, or styles removed above).
+  const addableStyles = useMemo(() => {
+    const map = new Map<
+      string,
+      { item: string; name: string; units: number; value: number }
+    >()
+    for (const l of allLines) {
+      if (draftItems.has(l.itemNumber)) continue
+      const e = map.get(l.itemNumber) ?? {
+        item: l.itemNumber,
+        name: l.styleName,
+        units: 0,
+        value: 0,
+      }
+      e.units += l.unitsOnHand
+      e.value += lineValue(l)
+      map.set(l.itemNumber, e)
+    }
+    return [...map.values()].sort((a, b) => a.name.localeCompare(b.name))
+  }, [allLines, draftItems])
+
+  function removeDraftLine(item: string) {
+    if (added.has(item)) {
+      setAdded((s) => {
+        const next = new Set(s)
+        next.delete(item)
+        return next
+      })
+    } else {
+      setExcluded((s) => new Set(s).add(item))
+    }
+  }
+
+  function addDraftLine(item: string) {
+    if (excluded.has(item)) {
+      setExcluded((s) => {
+        const next = new Set(s)
+        next.delete(item)
+        return next
+      })
+    } else {
+      setAdded((s) => new Set(s).add(item))
+    }
+  }
+
   const draft = useMemo(() => {
-    if (!customer || lines.length === 0) return null
+    if (!customer) return null
     return composeEndOfSeasonEmail({
       customer,
       season: season === 'all' ? 'Fall' : season,
@@ -119,7 +191,7 @@ export function SeasonReturnPage() {
   }, [customer, lines.length, totalUnits, season, config])
 
   async function handleConfirm() {
-    if (!customer) return
+    if (!customer || lines.length === 0) return
     setStage('submitting')
     setError(null)
     try {
@@ -267,6 +339,9 @@ export function SeasonReturnPage() {
             onSubjectChange={setSubject}
             intro={intro}
             onIntroChange={setIntro}
+            onRemoveLine={removeDraftLine}
+            addableStyles={addableStyles}
+            onAddLine={addDraftLine}
           />
 
           <aside className="return-actions card">
@@ -281,7 +356,7 @@ export function SeasonReturnPage() {
 
             <button
               className="btn btn--accent return-actions__primary"
-              disabled={stage === 'submitting'}
+              disabled={stage === 'submitting' || lines.length === 0}
               onClick={handleConfirm}
             >
               {stage === 'submitting'

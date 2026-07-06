@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useConfig } from '../context/ConfigContext'
 import { useInventory } from '../context/InventoryContext'
+import { useTransfers } from '../context/TransfersContext'
+import { useChat } from '../context/ChatContext'
 import type { DataMode } from '../models/config'
 import { PartnerLogo } from '../components/PartnerLogo'
 
@@ -16,9 +18,13 @@ export function SetupPage() {
     removePartner,
     resetConfig,
   } = useConfig()
-  const { customers } = useInventory()
+  const { customers, refresh } = useInventory()
+  const { transfers, sales, clearAll } = useTransfers()
+  const { clear: clearChat } = useChat()
   const [showLiveWarning, setShowLiveWarning] = useState(false)
   const [showAddPartner, setShowAddPartner] = useState(false)
+  const [confirmReset, setConfirmReset] = useState(false)
+  const [resetDone, setResetDone] = useState(false)
   const [newPartner, setNewPartner] = useState({
     name: '',
     website: '',
@@ -34,6 +40,14 @@ export function SetupPage() {
     addPartner(newPartner)
     setNewPartner({ name: '', website: '', warehouseId: '', siteId: '' })
     setShowAddPartner(false)
+  }
+
+  function resetDemoData() {
+    clearAll() // wipe transfer orders + liquidation sales (restores on-hand overlay)
+    refresh() // re-fetch full base inventory from the active service
+    clearChat() // reset the assistant conversation to its greeting
+    setConfirmReset(false)
+    setResetDone(true)
   }
 
   function setMode(mode: DataMode) {
@@ -412,6 +426,64 @@ export function SetupPage() {
             + Add retail partner
           </button>
         )}
+      </section>
+
+      {/* Demo data reset */}
+      <section className="card panel">
+        <div className="panel__head">
+          <div className="eyebrow">Demo data</div>
+          <div className="muted" style={{ fontSize: '0.85rem' }}>
+            Restore full sample inventory and remove every transfer order and
+            liquidation sale you've created during the demo. Partner mappings and
+            settings above are kept — use “Reset to defaults” below for those.
+          </div>
+        </div>
+
+        <div className="reset-data">
+          <div className="reset-data__stat muted">
+            {transfers.length} transfer{transfers.length === 1 ? '' : 's'} ·{' '}
+            {sales.length} liquidation sale{sales.length === 1 ? '' : 's'}{' '}
+            currently recorded
+          </div>
+
+          {confirmReset ? (
+            <div className="notice notice--warn reset-data__confirm">
+              <strong>Reset demo data?</strong> This clears all transfer orders
+              and liquidation sales, restores full on-hand inventory, and clears
+              the assistant chat. This can't be undone.
+              <div className="reset-data__actions">
+                <button
+                  className="btn btn--sm reset-data__danger"
+                  onClick={resetDemoData}
+                >
+                  Yes, reset everything
+                </button>
+                <button
+                  className="btn btn--ghost btn--sm"
+                  onClick={() => setConfirmReset(false)}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              className="btn btn--ghost btn--sm reset-data__trigger"
+              onClick={() => {
+                setResetDone(false)
+                setConfirmReset(true)
+              }}
+            >
+              Reset demo data
+            </button>
+          )}
+
+          {resetDone && !confirmReset && (
+            <div className="notice notice--ok">
+              Demo data reset — inventory restored, transfers and sales cleared.
+            </div>
+          )}
+        </div>
       </section>
 
       <div className="page__cta-row">

@@ -87,6 +87,72 @@ const STYLE_CATALOG: StyleSeed[] = [
   { itemNumber: 'VA-7081', styleName: 'Leather Belt', category: 'Accessories', season: 'Spring', color: 'Tan', unitCost: 28, retailPrice: 95 },
 ]
 
+// Named Vince SKUs pinned to a specific partner with exact colors and size
+// runs, so they always appear in the demo and survive a demo-data reset
+// (the reset re-fetches this dataset).
+interface PinnedLineSeed {
+  customerId: string
+  itemNumber: string
+  styleName: string
+  category: ProductCategory
+  season: Season
+  color: string
+  unitCost: number
+  retailPrice: number
+  consignedDate: string
+  sizeRun: [size: string, unitsOnHand: number][]
+}
+
+const PINNED_LINES: PinnedLineSeed[] = [
+  {
+    customerId: 'CUST-MACY',
+    itemNumber: 'V170813201',
+    styleName: 'Scallop-Detail Cotton Button-Front Shirt',
+    category: 'Tops',
+    season: 'Spring',
+    color: 'White',
+    unitCost: 86,
+    retailPrice: 295,
+    consignedDate: '2026-02-15',
+    sizeRun: [
+      ['XS', 38],
+      ['S', 52],
+      ['M', 46],
+    ],
+  },
+  {
+    customerId: 'CUST-MACY',
+    itemNumber: 'V170831098',
+    styleName: 'Scallop-Detail Cotton Midi Skirt',
+    category: 'Bottoms',
+    season: 'Spring',
+    color: 'White',
+    unitCost: 94,
+    retailPrice: 325,
+    consignedDate: '2026-02-15',
+    sizeRun: [
+      ['XS', 24],
+      ['M', 40],
+      ['XL', 18],
+    ],
+  },
+  {
+    customerId: 'CUST-MACY',
+    itemNumber: 'V206622516',
+    styleName: 'Mid-Rise Shine Crepe Pull-On Pant',
+    category: 'Bottoms',
+    season: 'Summer',
+    color: 'Taupe',
+    unitCost: 98,
+    retailPrice: 345,
+    consignedDate: '2026-04-15',
+    sizeRun: [
+      ['L', 34],
+      ['XL', 22],
+    ],
+  },
+]
+
 const SIZES_APPAREL = ['XS', 'S', 'M', 'L', 'XL']
 const SIZES_FOOTWEAR = ['6', '7', '8', '9', '10']
 const SIZES_ONE = ['OS']
@@ -142,6 +208,25 @@ function buildInventory(): InventoryLine[] {
           consignedDate: `2025-${String(consignMonth).padStart(2, '0')}-15`,
         })
       }
+    }
+  }
+
+  for (const pin of PINNED_LINES) {
+    for (const [size, unitsOnHand] of pin.sizeRun) {
+      lines.push({
+        id: `${pin.customerId}-${pin.itemNumber}-${size}`,
+        customerId: pin.customerId,
+        itemNumber: pin.itemNumber,
+        styleName: pin.styleName,
+        category: pin.category,
+        season: pin.season,
+        color: pin.color,
+        size,
+        unitsOnHand,
+        unitCost: pin.unitCost,
+        retailPrice: pin.retailPrice,
+        consignedDate: pin.consignedDate,
+      })
     }
   }
 

@@ -621,6 +621,39 @@
 .email__table .r {
   text-align: right;
 }
+.email__removecell {
+  width: 34px;
+  text-align: right;
+}
+.email__remove {
+  width: 24px;
+  height: 24px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: none;
+  color: var(--ink-muted);
+  font-size: 0.72rem;
+  line-height: 1;
+  transition: all 0.14s ease;
+}
+.email__remove:hover {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+.email__addline {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin: calc(-1 * var(--sp-2)) 0 var(--sp-4);
+}
+.email__addline .email__addselect {
+  flex: 1;
+  min-width: 0;
+  max-width: 460px;
+}
+.email__addline .btn {
+  flex-shrink: 0;
+}
 
 /* --- Return actions sidebar ------------------------------------------------ */
 .return-actions {
@@ -902,6 +935,38 @@
 .icon-btn--danger:hover {
   border-color: var(--danger);
   color: var(--danger);
+}
+
+/* --- Reset demo data ------------------------------------------------------- */
+.reset-data {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--sp-3);
+}
+.reset-data > .notice {
+  align-self: stretch;
+}
+.reset-data__stat {
+  font-size: 0.82rem;
+}
+.reset-data__actions {
+  display: flex;
+  gap: var(--sp-2);
+  margin-top: var(--sp-3);
+}
+.reset-data__trigger:hover {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+.reset-data__danger {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: #fff;
+}
+.reset-data__danger:hover {
+  background: #82301f;
+  border-color: #82301f;
 }
 
 /* --- Add partner form ------------------------------------------------------ */

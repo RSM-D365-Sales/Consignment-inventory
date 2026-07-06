@@ -59,7 +59,7 @@ export function InventoryTable({ lines, compact = false }: Props) {
         <thead>
           <tr>
             <th onClick={() => toggleSort('style')} className="th-sort">
-              Style{indicator('style')}
+              Style description{indicator('style')}
             </th>
             {!compact && <th>Item</th>}
             <th onClick={() => toggleSort('category')} className="th-sort">
