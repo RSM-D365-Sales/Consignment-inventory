@@ -625,6 +625,24 @@
   width: 34px;
   text-align: right;
 }
+.email__units {
+  width: 62px;
+  border: none;
+  border-bottom: 1px dashed transparent;
+  background: transparent;
+  font-family: var(--font-sans);
+  font-size: inherit;
+  color: var(--ink);
+  text-align: right;
+  padding: 2px 0;
+}
+.email__units:hover {
+  border-bottom-color: var(--line-strong);
+}
+.email__units:focus {
+  outline: none;
+  border-bottom-color: var(--camel);
+}
 .email__remove {
   width: 24px;
   height: 24px;

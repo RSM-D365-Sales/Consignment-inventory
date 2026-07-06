@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useInventory } from '../context/InventoryContext'
 import { useConfig } from '../context/ConfigContext'
 import { useTransfers } from '../context/TransfersContext'
-import type { Season } from '../models/types'
+import type { InventoryLine, Season } from '../models/types'
 import type { TransferOrder } from '../models/operations'
 import { SEASONS } from '../data/mockData'
 import {
@@ -64,11 +64,16 @@ export function SeasonReturnPage() {
   // fresh draft always starts from the season selection.
   const [excluded, setExcluded] = useState<Set<string>>(new Set())
   const [added, setAdded] = useState<Set<string>>(new Set())
+  // Style-level unit overrides (item number → units to return).
+  const [unitOverrides, setUnitOverrides] = useState<Map<string, number>>(
+    new Map(),
+  )
 
   useEffect(() => {
     if (stage === 'configure') {
       setExcluded(new Set())
       setAdded(new Set())
+      setUnitOverrides(new Map())
     }
   }, [stage])
 
@@ -79,10 +84,26 @@ export function SeasonReturnPage() {
     return items
   }, [scopeLines, excluded, added])
 
-  const lines = useMemo(
-    () => allLines.filter((l) => draftItems.has(l.itemNumber)),
-    [allLines, draftItems],
-  )
+  // Effective draft lines: the scoped/edited styles, with any unit override
+  // allocated across that style's size lines — never above what's on hand —
+  // so a partial return leaves the remainder at the partner.
+  const lines = useMemo(() => {
+    const remaining = new Map(unitOverrides)
+    const result: InventoryLine[] = []
+    for (const l of allLines) {
+      if (!draftItems.has(l.itemNumber)) continue
+      if (!remaining.has(l.itemNumber)) {
+        result.push(l)
+        continue
+      }
+      const left = remaining.get(l.itemNumber)!
+      if (left <= 0) continue
+      const take = Math.min(left, l.unitsOnHand)
+      remaining.set(l.itemNumber, left - take)
+      result.push(take === l.unitsOnHand ? l : { ...l, unitsOnHand: take })
+    }
+    return result
+  }, [allLines, draftItems, unitOverrides])
 
   const totalUnits = lines.reduce((s, l) => s + l.unitsOnHand, 0)
   const totalValue = lines.reduce((s, l) => s + l.unitCost * l.unitsOnHand, 0)
@@ -116,7 +137,26 @@ export function SeasonReturnPage() {
     return [...map.values()].sort((a, b) => a.name.localeCompare(b.name))
   }, [allLines, draftItems])
 
+  function setDraftUnits(item: string, requested: number) {
+    const available = allLines
+      .filter((l) => l.itemNumber === item)
+      .reduce((s, l) => s + l.unitsOnHand, 0)
+    const clamped = Math.max(1, Math.min(available, Math.round(requested)))
+    setUnitOverrides((m) => {
+      const next = new Map(m)
+      if (clamped >= available) next.delete(item)
+      else next.set(item, clamped)
+      return next
+    })
+  }
+
   function removeDraftLine(item: string) {
+    setUnitOverrides((m) => {
+      if (!m.has(item)) return m
+      const next = new Map(m)
+      next.delete(item)
+      return next
+    })
     if (added.has(item)) {
       setAdded((s) => {
         const next = new Set(s)
@@ -342,6 +382,7 @@ export function SeasonReturnPage() {
             onRemoveLine={removeDraftLine}
             addableStyles={addableStyles}
             onAddLine={addDraftLine}
+            onUnitsChange={setDraftUnits}
           />
 
           <aside className="return-actions card">

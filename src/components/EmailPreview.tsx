@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { EmailDraft, InventoryLine } from '../models/types'
 import { lineValue } from '../lib/aggregations'
 import { money, units } from '../lib/format'
@@ -23,6 +23,8 @@ interface Props {
   /** Partner styles not in the draft, offered by the add-line picker. */
   addableStyles?: AddableStyle[]
   onAddLine?: (itemNumber: string) => void
+  /** When provided, the units figure per row is editable. */
+  onUnitsChange?: (itemNumber: string, units: number) => void
 }
 
 /**
@@ -41,6 +43,7 @@ export function EmailPreview({
   onRemoveLine,
   addableStyles,
   onAddLine,
+  onUnitsChange,
 }: Props) {
   // Roll lines up to one row per style for a clean partner-facing summary.
   const rows = useMemo(() => groupByStyle(draft.lines), [draft.lines])
@@ -113,7 +116,16 @@ export function EmailPreview({
               <tr key={r.item}>
                 <td>{r.name}</td>
                 <td className="muted numeric">{r.item}</td>
-                <td className="r numeric">{units(r.units)}</td>
+                <td className="r numeric">
+                  {onUnitsChange ? (
+                    <UnitsCell
+                      value={r.units}
+                      onCommit={(n) => onUnitsChange(r.item, n)}
+                    />
+                  ) : (
+                    units(r.units)
+                  )}
+                </td>
                 <td className="r numeric">{money(r.value)}</td>
                 {editable && (
                   <td className="email__removecell">
@@ -185,6 +197,44 @@ export function EmailPreview({
         </p>
       </div>
     </div>
+  )
+}
+
+/**
+ * Editable units figure. Commits on blur or Enter; the parent clamps the
+ * request to the style's on-hand total and the field resyncs to whatever
+ * quantity was actually applied. Escape reverts.
+ */
+function UnitsCell({
+  value,
+  onCommit,
+}: {
+  value: number
+  onCommit: (n: number) => void
+}) {
+  const [text, setText] = useState(String(value))
+  useEffect(() => setText(String(value)), [value])
+
+  function commit() {
+    const n = Number.parseInt(text.replace(/[^\d]/g, ''), 10)
+    setText(String(value))
+    if (Number.isFinite(n) && n >= 1 && n !== value) onCommit(n)
+  }
+
+  return (
+    <input
+      className="email__units numeric"
+      inputMode="numeric"
+      value={text}
+      onChange={(e) => setText(e.target.value)}
+      onBlur={commit}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') e.currentTarget.blur()
+        if (e.key === 'Escape') setText(String(value))
+      }}
+      aria-label="Units to return"
+      title="Edit units to return — capped at units on hand"
+    />
   )
 }
 
